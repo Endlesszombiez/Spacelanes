@@ -1,6 +1,9 @@
-FROM node:24-bookworm-slim AS build
+# Compile the static UI on the builder architecture for every runtime platform.
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.3 AS bun
 
-COPY --from=oven/bun:1.4.3 /usr/local/bin/bun /usr/local/bin/bun
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
+
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 
 WORKDIR /app
 

@@ -97,6 +97,35 @@ bun run build
 
 使用 `bun run preview` 本地预览。建议通过 HTTP 服务访问，直接用 `file://` 打开可能受到浏览器 CORS 限制。
 
+### 已发布镜像 / Portainer
+
+[容器工作流](.github/workflows/docker.yml) 会在推送到 `main`、推送 `v*` 标签时，
+或从 Actions 页面手动运行时，将镜像发布到 GitHub Container Registry。
+支持 `linux/amd64` 和 `linux/arm64`。`latest` 跟随 `main`；例如 `v1.2.3` 发布标签
+会生成同名镜像标签，每次构建还会生成 `sha-<commit>` 标签。
+
+首次工作流成功后，在 GitHub 账户的 **Packages** 中打开 `spacelanes`，通过
+**Package settings → Change visibility → Public** 允许匿名拉取。
+即使仓库公开，GitHub 首次创建的包也可能是私有的。
+也可以保持私有，并在 Portainer 中配置具有 `read:packages` 权限的 GHCR 凭据。
+
+在 Docker Standalone 环境的 **Portainer → Stacks → Add stack → Web editor** 中粘贴：
+
+```yaml
+services:
+  spacelanes-proxy:
+    image: ghcr.io/endlesszombiez/spacelanes:latest
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+```
+
+打开 `http://YOUR-DOCKER-HOST-IP:8080`，在登录页选择已有后端地址。
+更新时重新部署 Stack 并启用拉取镜像。如果在 Portainer 外使用相同的 Compose 定义，
+运行 `docker compose pull`，再运行 `docker compose up -d`。
+部署主机不需要本地源码或构建工具。
+
 ### Docker Compose
 
 在本仓库目录构建并启动管理界面：

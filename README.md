@@ -97,6 +97,35 @@ The output is **`dist/index.html`**, with JavaScript, CSS, and bundled assets in
 
 Use `bun run preview` to preview locally. Prefer an HTTP server over opening the file via `file://`, which can encounter browser CORS restrictions.
 
+### Published image / Portainer
+
+[The container workflow](.github/workflows/docker.yml) publishes to GitHub Container Registry
+on pushes to `main`, `v*` tags, and manual runs from the Actions tab. The image supports
+`linux/amd64` and `linux/arm64`. `latest` tracks `main`; a release tag such as `v1.2.3`
+is published as the matching image tag. Each build also receives a `sha-<commit>` tag.
+
+After the first successful workflow run, open the `spacelanes` package under your GitHub
+account's **Packages**, then **Package settings → Change visibility → Public** to allow
+unauthenticated pulls. GitHub may create the package as private even for a public repository.
+Alternatively, keep it private and add GHCR credentials with `read:packages` access to Portainer.
+
+Paste this into **Portainer → Stacks → Add stack → Web editor** for a Docker Standalone host:
+
+```yaml
+services:
+  spacelanes-proxy:
+    image: ghcr.io/endlesszombiez/spacelanes:latest
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+```
+
+Open `http://YOUR-DOCKER-HOST-IP:8080` and select your existing backend URL on the login page.
+To update, redeploy the stack with image pulling enabled. With the same Compose definition
+outside Portainer, run `docker compose pull` followed by `docker compose up -d`.
+No local repository checkout or build tools are needed on the deployment host.
+
 ### Docker Compose
 
 Build and start the management UI from this repository:
