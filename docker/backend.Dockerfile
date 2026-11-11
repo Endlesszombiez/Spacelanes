@@ -3,7 +3,8 @@ FROM --platform=$BUILDPLATFORM golang:1.26.10-bookworm AS build
 ARG TARGETARCH
 WORKDIR /src
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc-aarch64-linux-gnu gcc-x86-64-linux-gnu git \
+    gcc-aarch64-linux-gnu gcc-x86-64-linux-gnu \
+    libc6-dev-arm64-cross libc6-dev-amd64-cross git \
     && rm -rf /var/lib/apt/lists/*
 COPY backend/go.mod backend/go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
