@@ -57,11 +57,11 @@
     "unsaved_changes_message": "Kaydedilmemiş Değişiklikler Var. Şimdi Ayrılırsan Bunlar Silinir. Ayrılmak İstiyor Musun?"
   },
   "title": {
-    "login": "CLIProxyAPI Yönetim Merkezi",
-    "abbr": "CPAMC"
+    "login": "Spacelanes Proxy",
+    "abbr": "Spacelanes Proxy"
   },
   "splash": {
-    "title": "CLIProxyAPI",
+    "title": "Spacelanes Proxy",
     "subtitle": "Yönetim Merkezi"
   },
   "login": {
@@ -1895,7 +1895,7 @@
   },
   "system_info": {
     "title": "Yönetim Merkezi Bilgisi",
-    "about_title": "CLIProxyAPI Yönetim Merkezi",
+    "about_title": "Spacelanes Proxy",
     "models_title": "Kullanılabilir Modeller",
     "models_desc": "/models Yanıtını Gösterir ve Kimlik Doğrulama için Kayıtlı API Anahtarlarını Otomatik Kullanır.",
     "models_loading": "Kullanılabilir Modeller Yükleniyor...",
@@ -1955,9 +1955,8 @@
   },
   "theme": {
     "switch": "Tema",
-    "light": "Yün Kağıt",
-    "white": "Saf Beyaz",
-    "dark": "Koyu",
+    "light": "Paper Red",
+    "dark": "Mono Slate",
     "auto": "Sistemi İzle"
   },
   "sidebar": {
@@ -1965,7 +1964,7 @@
     "toggle_collapse": "Kenar Çubuğunu Daralt",
     "expand": "Genişlet",
     "collapse": "Daralt",
-    "subtitle": "CLIProxyAPI Konsolu",
+    "subtitle": "Spacelanes Proxy Konsolu",
     "auth_files_count": "Kimlik Doğrulama Dosyaları: {{count}}"
   },
   "footer": {

@@ -1,8 +1,11 @@
 <div align="center">
 
-<img src="./logo.jpg" alt="CLI Proxy API" width="144">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./src/assets/branding/mono-slate.svg">
+  <img src="./src/assets/branding/paper-red.svg" alt="Spacelanes Proxy" width="144">
+</picture>
 
-# CLI Proxy API 管理中心
+# Spacelanes Proxy
 
 **运行状态，一目了然。服务配置，尽在掌握。**
 
@@ -93,6 +96,42 @@ bun run build
 产物为 **`dist/index.html`**，JavaScript、CSS 与打包资源均已内联。发布工作流会将其重命名为 `management.html`，供后端托管。
 
 使用 `bun run preview` 本地预览。建议通过 HTTP 服务访问，直接用 `file://` 打开可能受到浏览器 CORS 限制。
+
+### Docker Compose
+
+在本仓库目录构建并启动管理界面：
+
+```bash
+docker compose up -d --build
+```
+
+打开 **http://localhost:8080**。在登录页点击当前 URL 旁的**更改**，填写 CLI Proxy API
+后端地址，再使用其管理密钥登录。地址必须能从**浏览器**访问，例如 `http://localhost:8317`
+或 `https://proxy.example.com`；Compose 服务名只能在 Docker 网络内部解析。
+如果界面与后端不同源，后端需要允许来自界面来源的请求。通过 HTTPS 访问界面时，也应使用
+HTTPS 后端地址。
+
+此镜像托管前端，需要已有的 CLI Proxy API v8 后端。镜像不包含后端凭据。
+Nginx 以非特权用户运行，监听容器端口 `8080`，并提供 HTTP 健康检查。
+
+附带的 [compose.yaml](compose.yaml) 会构建 `spacelanes-proxy:local`。
+可在 `compose.yaml` 旁的 `.env` 文件设置 `SPACELANES_PORT` 修改宿主机端口，
+并通过 `VERSION` 指定界面构建版本，例如：
+
+```dotenv
+SPACELANES_PORT=8081
+VERSION=dev
+```
+
+加入已有 Compose 项目时，复制相同的服务定义，并将 `build.context` 指向本仓库目录。
+也可以单独构建镜像：
+
+```bash
+docker build --build-arg VERSION=dev -t spacelanes-proxy:local .
+```
+
+然后在已有服务中使用 `image: spacelanes-proxy:local`，并发布容器端口 `8080`。
+使用 `docker compose down` 停止附带的部署。
 
 <details>
 <summary><strong>发布细节</strong></summary>

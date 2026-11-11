@@ -57,11 +57,11 @@
     "unsaved_changes_message": "저장되지 않은 변경 사항이 있습니다. 지금 나가면 변경 사항이 삭제됩니다. 나가시겠습니까?"
   },
   "title": {
-    "login": "CLI Proxy API 관리 센터",
-    "abbr": "CPAMC"
+    "login": "Spacelanes Proxy",
+    "abbr": "Spacelanes Proxy"
   },
   "splash": {
-    "title": "CLI Proxy API",
+    "title": "Spacelanes Proxy",
     "subtitle": "관리 센터"
   },
   "login": {
@@ -1895,7 +1895,7 @@
   },
   "system_info": {
     "title": "관리 센터 정보",
-    "about_title": "CLI Proxy API 관리 센터",
+    "about_title": "Spacelanes Proxy",
     "models_title": "사용 가능한 모델",
     "models_desc": "/models 응답을 표시하며 저장된 API 키를 사용하여 자동으로 인증합니다.",
     "models_loading": "사용 가능한 모델을 불러오는 중...",
@@ -1955,9 +1955,8 @@
   },
   "theme": {
     "switch": "테마",
-    "light": "양모 종이",
-    "white": "순백",
-    "dark": "다크",
+    "light": "Paper Red",
+    "dark": "Mono Slate",
     "auto": "시스템 설정 따름"
   },
   "sidebar": {
@@ -1965,7 +1964,7 @@
     "toggle_collapse": "사이드바 접기",
     "expand": "펼치기",
     "collapse": "접기",
-    "subtitle": "CLI Proxy API 콘솔",
+    "subtitle": "Spacelanes Proxy 콘솔",
     "auth_files_count": "인증 파일: {{count}}개"
   },
   "footer": {

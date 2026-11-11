@@ -57,11 +57,11 @@
     "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？"
   },
   "title": {
-    "login": "CLI Proxy API Management Center",
-    "abbr": "CPAMC"
+    "login": "Spacelanes Proxy",
+    "abbr": "Spacelanes Proxy"
   },
   "splash": {
-    "title": "CLI Proxy API",
+    "title": "Spacelanes Proxy",
     "subtitle": "管理中心"
   },
   "login": {
@@ -1922,7 +1922,7 @@
   },
   "system_info": {
     "title": "管理中心資訊",
-    "about_title": "CLI Proxy API Management Center",
+    "about_title": "Spacelanes Proxy",
     "models_title": "可用模型清單",
     "models_desc": "展示 /models 回傳的模型，並自動使用伺服器儲存的 API Key 進行驗證。",
     "models_loading": "正在載入可用模型...",
@@ -1982,9 +1982,8 @@
   },
   "theme": {
     "switch": "主題",
-    "light": "羊毛紙",
-    "white": "純白",
-    "dark": "深色",
+    "light": "Paper Red",
+    "dark": "Mono Slate",
     "auto": "跟隨系統"
   },
   "sidebar": {
@@ -1992,7 +1991,7 @@
     "toggle_collapse": "收起側邊欄",
     "expand": "展開",
     "collapse": "收起",
-    "subtitle": "CLI Proxy API 管理控制台",
+    "subtitle": "Spacelanes Proxy 管理控制台",
     "auth_files_count": "驗證檔案：{{count}} 個"
   },
   "footer": {

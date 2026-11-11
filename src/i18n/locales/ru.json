@@ -57,11 +57,11 @@
     "unsaved_changes_message": "У вас есть несохранённые изменения. Если вы уйдёте, они будут потеряны. Выйти?"
   },
   "title": {
-    "login": "Центр управления CLI Proxy API",
-    "abbr": "CPAMC"
+    "login": "Spacelanes Proxy",
+    "abbr": "Spacelanes Proxy"
   },
   "splash": {
-    "title": "CLI Proxy API",
+    "title": "Spacelanes Proxy",
     "subtitle": "Центр управления"
   },
   "login": {
@@ -1889,7 +1889,7 @@
   },
   "system_info": {
     "title": "Информация о центре управления",
-    "about_title": "CLI Proxy API Management Center",
+    "about_title": "Spacelanes Proxy",
     "models_title": "Доступные модели",
     "models_desc": "Показывает ответ /models и автоматически использует сохранённые API-ключи для авторизации.",
     "models_loading": "Загрузка доступных моделей...",
@@ -1949,9 +1949,8 @@
   },
   "theme": {
     "switch": "Тема",
-    "light": "Шерстяная бумага",
-    "white": "Чисто-белая",
-    "dark": "Тёмная",
+    "light": "Paper Red",
+    "dark": "Mono Slate",
     "auto": "Следовать системе"
   },
   "sidebar": {
@@ -1959,7 +1958,7 @@
     "toggle_collapse": "Свернуть боковую панель",
     "expand": "Развернуть",
     "collapse": "Свернуть",
-    "subtitle": "Консоль управления CLI Proxy API",
+    "subtitle": "Консоль управления Spacelanes Proxy",
     "auth_files_count": "Файлов аутентификации: {{count}}"
   },
   "footer": {

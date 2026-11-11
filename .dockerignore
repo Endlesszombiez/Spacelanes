@@ -1,0 +1,17 @@
+# Send only the inputs needed for the production build.
+**
+!package.json
+!bun.lock
+!index.html
+!tsconfig.json
+!tsconfig.node.json
+!vite.config.ts
+!src/
+!src/**
+
+# Keep local configuration and generated content out of the build context.
+**/.env
+**/.env.*
+**/*.local
+**/node_modules
+**/graphify-out

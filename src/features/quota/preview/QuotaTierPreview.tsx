@@ -34,9 +34,8 @@ interface MockAccount {
 }
 
 const THEMES: { value: Theme; label: string }[] = [
-  { value: 'light', label: '纸感' },
-  { value: 'white', label: '纯白' },
-  { value: 'dark', label: '暗色' },
+  { value: 'light', label: 'Paper Red' },
+  { value: 'dark', label: 'Mono Slate' },
 ];
 
 const CARD_STAGGER_MS = 50;

@@ -431,11 +431,11 @@
   }
 }
 
-/* 墨色药丸（深色主题自动反相） */
+/* Primary actions follow the selected brand palette. */
 .primary {
   @extend %pill;
-  background: var(--text-primary);
-  color: var(--bg-secondary);
+  background: var(--primary-color);
+  color: var(--primary-contrast);
 }
 
 .secondary {
@@ -455,7 +455,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
+    background: var(--primary-hover);
     box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--text-primary) 45%, transparent);
   }
 

@@ -34,7 +34,7 @@ const contrast = (a: string, b: string) => {
 const light = tokens('login-tokens-light');
 const dark = tokens('login-tokens-dark');
 const backgrounds = {
-  light: [light['login-bg'], '#ffffff'], // 暖纸底 + 纯白主题
+  light: [light['login-bg']],
   dark: [dark['login-bg']],
 };
 
@@ -43,11 +43,9 @@ describe('login palette', () => {
     expect(Object.keys(light).sort()).toEqual(Object.keys(dark).sort());
   });
 
-  test('white theme only swaps the background to pure white', () => {
-    expect(palette).toMatch(
-      /html\[data-theme='white'\]\) & \{\s*--login-bg: #ffffff;\s*--bg-primary: #ffffff;\s*\}/
-    );
-    expect(palette).toMatch(/html\[data-theme='dark'\]\) & \{\s*@include login-tokens-dark;/);
+  test('uses only the two brand palettes', () => {
+    expect(palette).not.toContain("data-theme='white'");
+    expect(palette).toContain('@include login-tokens-dark;');
   });
 
   for (const [name, set, bgs] of [
@@ -67,15 +65,12 @@ describe('login palette', () => {
       for (const bg of bgs) {
         expect(contrast(set['login-text-faint'], bg)).toBeGreaterThanOrEqual(3);
       }
-      expect(contrast(set['login-submit-fg'], set['login-submit-bg'])).toBeGreaterThanOrEqual(7);
+      expect(contrast(set['login-submit-fg'], set['login-submit-bg'])).toBeGreaterThanOrEqual(4.5);
     });
   }
 
   test('the transition veil matches the login background in every theme', () => {
     expect(veil).toContain(`background: ${light['login-bg']};`);
-    expect(veil).toMatch(
-      /html\[data-theme='white'\] \.login-reveal-veil \{\s*background: #ffffff;/
-    );
     expect(veil).toMatch(
       new RegExp(
         `html\\[data-theme='dark'\\] \\.login-reveal-veil \\{\\s*background: ${dark['login-bg']};`

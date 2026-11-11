@@ -1,8 +1,11 @@
 <div align="center">
 
-<img src="./logo.jpg" alt="CLI Proxy API" width="144">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./src/assets/branding/mono-slate.svg">
+  <img src="./src/assets/branding/paper-red.svg" alt="Spacelanes Proxy" width="144">
+</picture>
 
-# CLI Proxy API Management Center
+# Spacelanes Proxy
 
 **Your proxy, at a glance. Your configuration, in control.**
 
@@ -93,6 +96,44 @@ bun run build
 The output is **`dist/index.html`**, with JavaScript, CSS, and bundled assets inlined. The release workflow renames it to `management.html` for backend hosting.
 
 Use `bun run preview` to preview locally. Prefer an HTTP server over opening the file via `file://`, which can encounter browser CORS restrictions.
+
+### Docker Compose
+
+Build and start the management UI from this repository:
+
+```bash
+docker compose up -d --build
+```
+
+Open **http://localhost:8080**. On the login page, click **Change** beside the current URL
+and enter your CLI Proxy API backend address, then sign in with its management key.
+Use an address reachable from your **browser**, such as `http://localhost:8317` or
+`https://proxy.example.com`; Compose service names are only resolvable inside the Docker network.
+The backend must allow requests from the UI origin when using different origins. If the UI is
+served over HTTPS, use an HTTPS backend address too.
+
+The image serves the frontend and requires an existing CLI Proxy API v8 backend. No backend
+credentials are baked into the image. It runs Nginx as an unprivileged user on container port
+`8080`, with an HTTP health check.
+
+The included [compose.yaml](compose.yaml) builds `spacelanes-proxy:local`. Set `SPACELANES_PORT`
+to change the published port and `VERSION` to label the UI build. For example, in a `.env` file
+beside `compose.yaml`:
+
+```dotenv
+SPACELANES_PORT=8081
+VERSION=dev
+```
+
+To add it to an existing Compose project, use the same service definition with
+`build.context` pointing to this checkout. You can also build the image separately:
+
+```bash
+docker build --build-arg VERSION=dev -t spacelanes-proxy:local .
+```
+
+Then use `image: spacelanes-proxy:local` in that project's service, publishing container port
+`8080`. Stop the included stack with `docker compose down`.
 
 <details>
 <summary><strong>Release details</strong></summary>
