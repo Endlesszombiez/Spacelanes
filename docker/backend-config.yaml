@@ -1,0 +1,27 @@
+# First-run configuration. Later edits live in the persistent /data/config.yaml.
+config-version: 8
+server:
+  host: "0.0.0.0"
+  port: 8317
+management:
+  allow-remote: true
+  secret-key: ""
+  # Nginx serves the Spacelanes UI; do not download another management panel.
+  disable-control-panel: true
+  disable-auto-update-panel: true
+access:
+  # Replaced with a fresh random client key at first startup. View it in the UI.
+  api-keys:
+    - "__GENERATED_CLIENT_KEY__"
+oauth:
+  auth-dir: "/data/auths"
+plugins:
+  enabled: false
+  dir: "/data/plugins"
+observability:
+  logs:
+    logging-to-file: false
+    logs-max-total-size-mb: 100
+    error-logs-max-files: 10
+  usage:
+    usage-statistics-enabled: true

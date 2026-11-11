@@ -1,10 +1,29 @@
 services:
+  backend:
+    image: spacelanes-backend:local
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      MANAGEMENT_PASSWORD: "${MANAGEMENT_PASSWORD:?Set MANAGEMENT_PASSWORD in your environment or .env file}"
+      ANTIGRAVITY_OAUTH_CLIENT_ID: "${ANTIGRAVITY_OAUTH_CLIENT_ID:-}"
+      ANTIGRAVITY_OAUTH_CLIENT_SECRET: "${ANTIGRAVITY_OAUTH_CLIENT_SECRET:-}"
+    volumes:
+      - spacelanes-data:/data
+    restart: unless-stopped
+
   spacelanes:
     image: spacelanes-proxy:local
     build:
       context: .
       args:
         VERSION: ${VERSION:-dev}
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "${SPACELANES_PORT:-8080}:8080"
     restart: unless-stopped
+
+volumes:
+  spacelanes-data:

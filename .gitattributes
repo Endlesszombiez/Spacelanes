@@ -1,0 +1,4 @@
+# Preserve the exact pinned upstream source, including its committed LF endings.
+backend/** -text
+backend/UPSTREAM.json text eol=crlf
+backend/internal/auth/antigravity/environment_test.go text eol=crlf

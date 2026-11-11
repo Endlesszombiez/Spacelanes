@@ -9,7 +9,7 @@
 
 **Your proxy, at a glance. Your configuration, in control.**
 
-A lightweight Web UI for CLI Proxy API.<br>
+CLI Proxy API and its Spacelanes management UI, built and served together.<br>
 Manage providers, credentials, quotas, and logs — from a single HTML file.
 
 [![Backend: v8](https://img.shields.io/badge/Backend-v8-5865F2?style=flat-square)](https://github.com/router-for-me/CLIProxyAPI)
@@ -35,15 +35,19 @@ From everyday configuration to troubleshooting, keep the essentials close at han
 **Single-file deployment** · **Responsive layout** · **Four UI languages**
 
 > [!IMPORTANT]
-> Requires **CLI Proxy API ≥ 8.0.0**; the latest v8 release is recommended. This repository is the management UI, not the proxy — it does not forward traffic. It uses the **v8 Management API** (`/v8/management`) and v8 configuration layout, with no v0 fallback. Plugin resources and custom extensions retain their backend-declared paths.
+> This repository includes the **CLI Proxy API v8 backend** in `backend/` and the Spacelanes frontend in `src/`. The Docker stack builds and serves both through one address. The frontend uses the **v8 Management API** (`/v8/management`) and v8 configuration layout, with no v0 fallback. Plugin resources and custom extensions retain their backend-declared paths.
 
 ## Quick start
 
-The UI is bundled with [CLI Proxy API](https://github.com/router-for-me/CLIProxyAPI). No separate frontend deployment is needed for the standard setup.
+For a complete deployment, use the [Portainer stack](#published-stack--portainer) below, or set
+`MANAGEMENT_PASSWORD` and run `docker compose up -d --build` from this checkout.
 
-1. Start your CLI Proxy API service.
-2. Open `http://<host>:<api_port>/management.html`.
-3. Enter your **management key** and connect.
+1. Start the stack.
+2. Open `http://<host>:8080`.
+3. Enter your **management password** and connect using the detected address.
+
+The standalone single-file UI remains available at `dist/index.html`; an existing compatible
+backend can host it as `management.html`.
 
 The API address is detected from the page URL and can be changed manually.
 
@@ -97,72 +101,108 @@ The output is **`dist/index.html`**, with JavaScript, CSS, and bundled assets in
 
 Use `bun run preview` to preview locally. Prefer an HTTP server over opening the file via `file://`, which can encounter browser CORS restrictions.
 
-### Published image / Portainer
+### Published stack / Portainer
 
-[The container workflow](.github/workflows/docker.yml) publishes to GitHub Container Registry
-on pushes to `main`, `v*` tags, and manual runs from the Actions tab. The image supports
-`linux/amd64` and `linux/arm64`. `latest` tracks `main`; a release tag such as `v1.2.3`
-is published as the matching image tag. Each build also receives a `sha-<commit>` tag.
+[The container workflow](.github/workflows/docker.yml) builds **both components from this
+repository** and publishes two images to GitHub Container Registry:
 
-After the first successful workflow run, open the `spacelanes` package under your GitHub
-account's **Packages**, then **Package settings → Change visibility → Public** to allow
-unauthenticated pulls. GitHub may create the package as private even for a public repository.
-Alternatively, keep it private and add GHCR credentials with `read:packages` access to Portainer.
+- `ghcr.io/endlesszombiez/spacelanes:latest` — the Spacelanes UI and Nginx gateway.
+- `ghcr.io/endlesszombiez/spacelanes:backend-latest` — the CLI Proxy API backend in [backend/](backend/).
 
-Paste this into **Portainer → Stacks → Add stack → Web editor** for a Docker Standalone host:
+Both support `linux/amd64` and `linux/arm64`. Frontend tags are `latest`, `v*`, and
+`sha-<commit>`; backend tags have the `backend-` prefix (`backend-latest`, `backend-v*`,
+and `backend-sha-<commit>`). Both images share the existing GHCR package and its visibility. The workflow tests
+v8 login, rejected credentials, client authentication, and persistent data before publishing.
+Pull requests build and test the stack without publishing images.
+
+In **Portainer → Stacks → Add stack**, add an environment variable named
+`MANAGEMENT_PASSWORD` with the password you want to enter at login. A password generated with
+`openssl rand -base64 32` works: use the complete output literally, without decoding it.
+Set this in Portainer, not in an image or committed YAML file.
+
+Paste [compose.portainer.yaml](compose.portainer.yaml) into the Web editor on a Docker
+Standalone host (the same file works with ordinary Docker Compose):
 
 ```yaml
 services:
-  spacelanes-proxy:
+  backend:
+    image: ghcr.io/endlesszombiez/spacelanes:backend-latest
+    pull_policy: always
+    environment:
+      MANAGEMENT_PASSWORD: "${MANAGEMENT_PASSWORD:?Set MANAGEMENT_PASSWORD in Portainer stack environment variables}"
+      ANTIGRAVITY_OAUTH_CLIENT_ID: "${ANTIGRAVITY_OAUTH_CLIENT_ID:-}"
+      ANTIGRAVITY_OAUTH_CLIENT_SECRET: "${ANTIGRAVITY_OAUTH_CLIENT_SECRET:-}"
+    volumes:
+      - spacelanes-data:/data
+    restart: unless-stopped
+
+  spacelanes:
     image: ghcr.io/endlesszombiez/spacelanes:latest
     pull_policy: always
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
-      - "8080:8080"
+      - "${SPACELANES_PORT:-8080}:8080"
     restart: unless-stopped
+
+volumes:
+  spacelanes-data:
 ```
 
-Open `http://YOUR-DOCKER-HOST-IP:8080` and select your existing backend URL on the login page.
-To update, redeploy the stack with image pulling enabled. With the same Compose definition
-outside Portainer, run `docker compose pull` followed by `docker compose up -d`.
-No local repository checkout or build tools are needed on the deployment host.
+Open **http://YOUR-DOCKER-HOST-IP:8080**, leave the detected server address selected,
+and log in with `MANAGEMENT_PASSWORD`. Nginx forwards Management API, proxy, OAuth, and
+plugin requests to the backend using their original paths. No separate backend address is
+needed. Proxy clients use `http://YOUR-DOCKER-HOST-IP:8080/v1` and a **client API key** from
+Configuration → client keys. First startup generates a random client key; it is separate
+from your management password.
 
-### Docker Compose
+The `spacelanes-data` volume stores `config.yaml`, auth files, the local database, logs,
+and installed plugins under `/data`. The initial configuration is copied only when the
+volume has no `config.yaml`; image updates preserve subsequent changes made in the UI.
+Back up this volume. Removing it resets the configuration and credentials.
 
-Build and start the management UI from this repository:
+Redeploy with image pulling enabled to update both services. Changing `MANAGEMENT_PASSWORD`
+and redeploying changes the login password without resetting stored configuration. With
+Compose outside Portainer, use `docker compose -f compose.portainer.yaml pull` followed by
+`docker compose -f compose.portainer.yaml up -d`.
+
+The GHCR `spacelanes` package must be public for anonymous pulls. If you fork this repository,
+set your package's visibility to **Public**, or configure Portainer with GHCR credentials
+that have `read:packages` access.
+
+### Docker Compose / local builds
+
+Set `MANAGEMENT_PASSWORD` in your environment or an untracked `.env` file, then build both
+services from this checkout:
 
 ```bash
 docker compose up -d --build
 ```
 
-Open **http://localhost:8080**. On the login page, click **Change** beside the current URL
-and enter your CLI Proxy API backend address, then sign in with its management key.
-Use an address reachable from your **browser**, such as `http://localhost:8317` or
-`https://proxy.example.com`; Compose service names are only resolvable inside the Docker network.
-The backend must allow requests from the UI origin when using different origins. If the UI is
-served over HTTPS, use an HTTPS backend address too.
+Open **http://localhost:8080** and log in with that password. Set `SPACELANES_PORT` to change
+the host port and `VERSION` to label the frontend build. Both services run as non-root users
+and expose health checks; the backend is reachable through Nginx on the stack network.
+The backend's bundled upstream management panel is disabled so it cannot replace Spacelanes.
 
-The image serves the frontend and requires an existing CLI Proxy API v8 backend. No backend
-credentials are baked into the image. It runs Nginx as an unprivileged user on container port
-`8080`, with an HTTP health check.
+`backend/` contains the upstream source snapshot, not a prebuilt binary or a runtime download.
+[backend/UPSTREAM.json](backend/UPSTREAM.json) records its release, exact commit, archive hash,
+and local changes; [backend/LICENSE](backend/LICENSE) retains the upstream MIT license.
+Go dependencies are pinned by `backend/go.mod` and `backend/go.sum`. The backend Dockerfile
+compiles the binary with CGO support for each target architecture. See
+[docker/backend.Dockerfile](docker/backend.Dockerfile) for its Go toolchain version.
 
-The included [compose.yaml](compose.yaml) builds `spacelanes-proxy:local`. Set `SPACELANES_PORT`
-to change the published port and `VERSION` to label the UI build. For example, in a `.env` file
-beside `compose.yaml`:
+Antigravity OAuth requires `ANTIGRAVITY_OAUTH_CLIENT_ID` and
+`ANTIGRAVITY_OAUTH_CLIENT_SECRET` on the backend. Set them in the Portainer stack environment
+if you use that provider. The imported backend's embedded OAuth credentials were removed;
+login and refresh now use these runtime values. Other providers and management login do not
+require these variables.
 
-```dotenv
-SPACELANES_PORT=8081
-VERSION=dev
-```
+Provider OAuth flows can require a localhost callback or an SSH tunnel, depending on the
+provider. The UI's callback-paste flow uses this same public address; use backend CLI flags
+or publish the provider-specific callback port only if you choose a CLI login flow.
 
-To add it to an existing Compose project, use the same service definition with
-`build.context` pointing to this checkout. You can also build the image separately:
-
-```bash
-docker build --build-arg VERSION=dev -t spacelanes-proxy:local .
-```
-
-Then use `image: spacelanes-proxy:local` in that project's service, publishing container port
-`8080`. Stop the included stack with `docker compose down`.
+Stop the stack with `docker compose down`; the named volume is retained.
 
 <details>
 <summary><strong>Release details</strong></summary>

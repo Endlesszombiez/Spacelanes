@@ -1,0 +1,24 @@
+services:
+  backend:
+    image: ghcr.io/endlesszombiez/spacelanes:backend-latest
+    pull_policy: always
+    environment:
+      MANAGEMENT_PASSWORD: "${MANAGEMENT_PASSWORD:?Set MANAGEMENT_PASSWORD in Portainer stack environment variables}"
+      ANTIGRAVITY_OAUTH_CLIENT_ID: "${ANTIGRAVITY_OAUTH_CLIENT_ID:-}"
+      ANTIGRAVITY_OAUTH_CLIENT_SECRET: "${ANTIGRAVITY_OAUTH_CLIENT_SECRET:-}"
+    volumes:
+      - spacelanes-data:/data
+    restart: unless-stopped
+
+  spacelanes:
+    image: ghcr.io/endlesszombiez/spacelanes:latest
+    pull_policy: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${SPACELANES_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  spacelanes-data:

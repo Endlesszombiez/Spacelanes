@@ -2,7 +2,7 @@
 
 ## Project Scope & Structure
 
-This is a React 19 + TypeScript + Vite management frontend for CLI Proxy API, not the proxy itself. It exclusively uses the backend v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
+This repository contains the React 19 + TypeScript + Vite management frontend and a pinned CLI Proxy API backend source snapshot under `backend/`. The Docker stack builds both and serves them through the Nginx gateway on port 8080. Backend provenance and local changes are recorded in `backend/UPSTREAM.json`; preserve its license and inspect `backend/AGENTS.md` before backend edits. It exclusively uses the backend v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
 
 - `src/features/`: feature-owned pages, components, hooks, types, and logic. Current features are `dashboard`, `providers`, `authFiles`, `oauth`, `quota`, `config`, `logs`, and `plugins`. Prefer this layout for new feature work.
 - `src/pages/`: remaining route pages outside the feature layout (login, system, and the auth-file OAuth excluded-model/model-alias editors); `LogsPage.tsx` there is only a re-export of the logs feature. Follow nearby conventions when modifying these; do not migrate unrelated code.
@@ -34,9 +34,11 @@ The production artifact is a single `dist/index.html` with JS/CSS and bundled as
 
 Preserve hash routing and single-file deployment. Changes to assets, imports, code splitting, or build configuration must not introduce required external build artifacts. Do not edit generated `dist/` files. App version is injected as `__APP_VERSION__` from `VERSION`, then git tags, then the package version, falling back to `dev`.
 
+The full-stack container workflow builds both `Dockerfile` and `docker/backend.Dockerfile`, then runs `docker/smoke-test.sh` against `compose.portainer.yaml` before publishing both multi-platform images. Backend runtime data belongs in the `/data` volume, and `MANAGEMENT_PASSWORD` is supplied at runtime.
+
 ## API Contracts & State
 
-- Treat backend contracts as the source of truth. Inspect `../CLIProxyAPI` before changing endpoint names, payloads, provider keys, OAuth callback parameters, auth-file semantics, or plugin/config contracts. If that checkout is unavailable, report the missing evidence rather than guessing; do not modify the backend unless requested.
+- Treat backend contracts as the source of truth. Inspect the bundled `backend/` source before changing endpoint names, payloads, provider keys, OAuth callback parameters, auth-file semantics, or plugin/config contracts. Record deliberate backend changes in `backend/UPSTREAM.json`; do not modify unrelated backend behavior.
 - Reuse `apiClient` from `src/services/api/client.ts` for Management API requests through domain modules. It centralizes the API prefix, bearer authentication, error normalization, and response-header handling. Avoid bypassing it with ad hoc requests in components.
 - Preserve the client's event integration: `unauthorized` handles 401s, `server-version-update` carries version/build metadata, and `server-plugin-support-update` carries plugin capability information. Keep plugin routes gated by backend support.
 - Normalize backend fields on read and serialize on write in the API layer; consult `transformers.ts` and the relevant domain module. Keep raw backend field-name handling out of ordinary UI components.

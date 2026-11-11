@@ -9,7 +9,7 @@
 
 **运行状态，一目了然。服务配置，尽在掌握。**
 
-为 CLI Proxy API 打造的轻量 Web 管理界面。<br>
+CLI Proxy API 后端与 Spacelanes 管理界面，一起构建与部署。<br>
 提供商、凭据、配额与日志，一个 HTML 文件即可管理。
 
 [![后端：v8](https://img.shields.io/badge/Backend-v8-5865F2?style=flat-square)](https://github.com/router-for-me/CLIProxyAPI)
@@ -35,15 +35,18 @@
 **单文件部署** · **响应式布局** · **四种界面语言**
 
 > [!IMPORTANT]
-> 需要 **CLI Proxy API ≥ 8.0.0**，推荐使用最新 v8 版本。本仓库仅包含管理界面，**不是代理本体，不参与流量转发**。仅使用 **v8 Management API**（`/v8/management`）与 v8 配置结构，不提供 v0 回退；插件资源与自定义扩展保留后端声明的路径。
+> 本仓库包含 `backend/` 中的 **CLI Proxy API v8 后端** 和 `src/` 中的 Spacelanes 前端。Docker 栈从同一地址提供两者。前端仅使用 **v8 Management API**（`/v8/management`）与 v8 配置结构，不提供 v0 回退；插件资源与自定义扩展保留后端声明的路径。
 
 ## 快速开始
 
-[CLI Proxy API](https://github.com/router-for-me/CLIProxyAPI) 已内置 Web UI，常规使用无需单独部署前端。
+使用下方的完整 Portainer 栈，或设置 `MANAGEMENT_PASSWORD` 后在本仓库运行
+`docker compose up -d --build`。
 
-1. 启动 CLI Proxy API 服务。
-2. 打开 `http://<host>:<api_port>/management.html`。
-3. 输入 **管理密钥** 并连接。
+1. 启动完整栈。
+2. 打开 `http://<host>:8080`。
+3. 输入管理密码，保留自动检测的地址并连接。
+
+单文件界面 `dist/index.html` 仍可独立部署为现有后端的 `management.html`。
 
 页面会根据当前 URL 自动识别 API 地址，也支持手动修改。
 
@@ -97,70 +100,89 @@ bun run build
 
 使用 `bun run preview` 本地预览。建议通过 HTTP 服务访问，直接用 `file://` 打开可能受到浏览器 CORS 限制。
 
-### 已发布镜像 / Portainer
+### 完整镜像栈 / Portainer
 
-[容器工作流](.github/workflows/docker.yml) 会在推送到 `main`、推送 `v*` 标签时，
-或从 Actions 页面手动运行时，将镜像发布到 GitHub Container Registry。
-支持 `linux/amd64` 和 `linux/arm64`。`latest` 跟随 `main`；例如 `v1.2.3` 发布标签
-会生成同名镜像标签，每次构建还会生成 `sha-<commit>` 标签。
+[容器工作流](.github/workflows/docker.yml) 从本仓库源码构建并发布两个镜像：
 
-首次工作流成功后，在 GitHub 账户的 **Packages** 中打开 `spacelanes`，通过
-**Package settings → Change visibility → Public** 允许匿名拉取。
-即使仓库公开，GitHub 首次创建的包也可能是私有的。
-也可以保持私有，并在 Portainer 中配置具有 `read:packages` 权限的 GHCR 凭据。
+- `ghcr.io/endlesszombiez/spacelanes:latest`：Spacelanes 前端与 Nginx 网关。
+- `ghcr.io/endlesszombiez/spacelanes:backend-latest`：[backend/](backend/) 中的 CLI Proxy API 后端。
 
-在 Docker Standalone 环境的 **Portainer → Stacks → Add stack → Web editor** 中粘贴：
+两者均支持 `linux/amd64` 和 `linux/arm64`。推送到 `main` 发布 `latest`；`v*` 标签
+发布对应版本，并生成 `sha-<commit>` 标签。后端标签使用 `backend-` 前缀，例如
+`backend-latest`、`backend-v1.2.3` 和 `backend-sha-<commit>`。两者共享现有 GHCR 包的可见性。
+发布前会测试登录、鉴权和数据持久化。
+Pull request 只构建和测试，不发布镜像。
+
+在 **Portainer → Stacks → Add stack** 中添加环境变量 `MANAGEMENT_PASSWORD`，
+设置为登录时输入的密码。可使用 `openssl rand -base64 32` 生成的完整字符串，
+无需解码。不要把真实密码写入镜像或提交到仓库。
+
+将 [compose.portainer.yaml](compose.portainer.yaml) 粘贴到 Docker Standalone 主机的
+Web editor 中：
 
 ```yaml
 services:
-  spacelanes-proxy:
+  backend:
+    image: ghcr.io/endlesszombiez/spacelanes:backend-latest
+    pull_policy: always
+    environment:
+      MANAGEMENT_PASSWORD: "${MANAGEMENT_PASSWORD:?Set MANAGEMENT_PASSWORD in Portainer stack environment variables}"
+      ANTIGRAVITY_OAUTH_CLIENT_ID: "${ANTIGRAVITY_OAUTH_CLIENT_ID:-}"
+      ANTIGRAVITY_OAUTH_CLIENT_SECRET: "${ANTIGRAVITY_OAUTH_CLIENT_SECRET:-}"
+    volumes:
+      - spacelanes-data:/data
+    restart: unless-stopped
+
+  spacelanes:
     image: ghcr.io/endlesszombiez/spacelanes:latest
     pull_policy: always
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
-      - "8080:8080"
+      - "${SPACELANES_PORT:-8080}:8080"
     restart: unless-stopped
+
+volumes:
+  spacelanes-data:
 ```
 
-打开 `http://YOUR-DOCKER-HOST-IP:8080`，在登录页选择已有后端地址。
-更新时重新部署 Stack 并启用拉取镜像。如果在 Portainer 外使用相同的 Compose 定义，
-运行 `docker compose pull`，再运行 `docker compose up -d`。
-部署主机不需要本地源码或构建工具。
+打开 **http://YOUR-DOCKER-HOST-IP:8080**，保留自动检测的服务器地址，输入
+`MANAGEMENT_PASSWORD` 登录。Nginx 按原始路径转发管理 API、代理、OAuth 和插件请求，
+无需另外部署后端或填写后端地址。代理客户端使用 `http://YOUR-DOCKER-HOST-IP:8080/v1`
+及配置页面中的客户端 API 密钥。首次启动会生成随机客户端密钥，与管理密码独立。
 
-### Docker Compose
+`spacelanes-data` 卷保存 `/data` 下的 `config.yaml`、认证文件、数据库、日志和插件。
+仅首次启动复制默认配置；更新镜像保留之后的配置修改。请备份该卷，删除卷会重置数据。
+更改 `MANAGEMENT_PASSWORD` 并重新部署即可更改登录密码，不会清空配置。
 
-在本仓库目录构建并启动管理界面：
+更新时拉取两个镜像并重新部署。普通 Compose 可运行
+`docker compose -f compose.portainer.yaml pull`，然后运行
+`docker compose -f compose.portainer.yaml up -d`。GHCR 的 `spacelanes` 包需设为 **Public**
+才能匿名拉取，否则请在 Portainer 配置具有 `read:packages` 权限的 GHCR 凭据。
+
+### Docker Compose / 本地构建
+
+在环境或未提交的 `.env` 文件中设置 `MANAGEMENT_PASSWORD`，然后运行：
 
 ```bash
 docker compose up -d --build
 ```
 
-打开 **http://localhost:8080**。在登录页点击当前 URL 旁的**更改**，填写 CLI Proxy API
-后端地址，再使用其管理密钥登录。地址必须能从**浏览器**访问，例如 `http://localhost:8317`
-或 `https://proxy.example.com`；Compose 服务名只能在 Docker 网络内部解析。
-如果界面与后端不同源，后端需要允许来自界面来源的请求。通过 HTTPS 访问界面时，也应使用
-HTTPS 后端地址。
+打开 **http://localhost:8080** 并用该密码登录。`SPACELANES_PORT` 设置主机端口，
+`VERSION` 设置前端版本。两个服务均使用非 root 用户和健康检查；后端通过栈网络
+由 Nginx 转发。上游自带管理面板已禁用，避免覆盖 Spacelanes。
 
-此镜像托管前端，需要已有的 CLI Proxy API v8 后端。镜像不包含后端凭据。
-Nginx 以非特权用户运行，监听容器端口 `8080`，并提供 HTTP 健康检查。
+`backend/` 包含后端源码快照。[backend/UPSTREAM.json](backend/UPSTREAM.json) 记录
+版本、提交、归档哈希和本地修改，[backend/LICENSE](backend/LICENSE) 保留 MIT 许可证。
+Go 依赖由 `go.mod` 与 `go.sum` 固定，Dockerfile 为每个架构编译支持 CGO 的后端。
+Antigravity OAuth 需要在后端设置 `ANTIGRAVITY_OAUTH_CLIENT_ID` 和
+`ANTIGRAVITY_OAUTH_CLIENT_SECRET`。使用该提供商时请在 Portainer 栈环境变量中提供；
+源码中的内置 OAuth 凭据已移除。其他提供商与管理登录不需要这两个变量。
+提供商 OAuth 可能需要 localhost 回调或 SSH 隧道；UI 的粘贴回调流程使用同一公开地址。
+只有选择 CLI 登录流程时才需要按提供商发布额外回调端口。
 
-附带的 [compose.yaml](compose.yaml) 会构建 `spacelanes-proxy:local`。
-可在 `compose.yaml` 旁的 `.env` 文件设置 `SPACELANES_PORT` 修改宿主机端口，
-并通过 `VERSION` 指定界面构建版本，例如：
-
-```dotenv
-SPACELANES_PORT=8081
-VERSION=dev
-```
-
-加入已有 Compose 项目时，复制相同的服务定义，并将 `build.context` 指向本仓库目录。
-也可以单独构建镜像：
-
-```bash
-docker build --build-arg VERSION=dev -t spacelanes-proxy:local .
-```
-
-然后在已有服务中使用 `image: spacelanes-proxy:local`，并发布容器端口 `8080`。
-使用 `docker compose down` 停止附带的部署。
+运行 `docker compose down` 停止栈，命名卷会保留。
 
 <details>
 <summary><strong>发布细节</strong></summary>

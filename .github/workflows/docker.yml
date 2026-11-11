@@ -1,6 +1,7 @@
-name: Build and Publish Container
+name: Build and Publish Stack
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -36,11 +37,14 @@ jobs:
             echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set up runtime architecture emulation
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Generate image tags and labels
-        id: metadata
+      - name: Generate frontend image tags and labels
+        id: frontend
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.image.outputs.name }}
@@ -53,7 +57,33 @@ jobs:
             org.opencontainers.image.title=Spacelanes Proxy
             org.opencontainers.image.version=${{ steps.image.outputs.version }}
 
-      - name: Build image for smoke test
+      - name: Generate backend image tags and labels
+        id: backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: prefix=backend-
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=backend-sha-
+          labels: |
+            org.opencontainers.image.title=Spacelanes Proxy Backend
+            org.opencontainers.image.version=${{ steps.image.outputs.version }}
+
+      - name: Build backend from repository source for smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          load: true
+          platforms: linux/amd64
+          tags: spacelanes-backend:smoke
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build frontend for smoke test
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -61,43 +91,54 @@ jobs:
           platforms: linux/amd64
           tags: spacelanes-proxy:smoke
           build-args: VERSION=${{ steps.image.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
 
-      - name: Smoke-test the container
+      - name: Smoke-test the full Portainer stack
         shell: bash
         run: |
-          docker run --detach --name spacelanes-smoke \
-            --publish 127.0.0.1:8080:8080 spacelanes-proxy:smoke
-          trap 'docker logs spacelanes-smoke; docker rm --force spacelanes-smoke' EXIT
-          curl --fail --silent --show-error --retry 10 --retry-delay 1 --retry-all-errors \
-            --retry-connrefused --output /tmp/spacelanes.html http://127.0.0.1:8080/
-          grep -q '<title>Spacelanes Proxy</title>' /tmp/spacelanes.html
-          grep -q '<div id="root">' /tmp/spacelanes.html
-          test "$(docker exec spacelanes-smoke id -u)" -ne 0
-          docker exec spacelanes-smoke wget --quiet --spider http://127.0.0.1:8080/
+          sed -i 's/\r$//' docker/smoke-test.sh
+          bash docker/smoke-test.sh
 
       - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish multi-platform image
+      - name: Publish multi-platform backend image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.backend.outputs.tags }}
+          labels: ${{ steps.backend.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Publish multi-platform frontend image
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
+          tags: ${{ steps.frontend.outputs.tags }}
+          labels: ${{ steps.frontend.outputs.labels }}
           build-args: VERSION=${{ steps.image.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
 
       - name: Write image details
+        if: github.event_name != 'pull_request'
         env:
-          IMAGE_TAGS: ${{ steps.metadata.outputs.tags }}
+          FRONTEND_TAGS: ${{ steps.frontend.outputs.tags }}
+          BACKEND_TAGS: ${{ steps.backend.outputs.tags }}
         run: |
-          printf 'Published Spacelanes Proxy images:\n\n```text\n%s\n```\n' "$IMAGE_TAGS" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Published Spacelanes Proxy stack:\n\n```text\n%s\n%s\n```\n' \
+            "$FRONTEND_TAGS" "$BACKEND_TAGS" >> "$GITHUB_STEP_SUMMARY"

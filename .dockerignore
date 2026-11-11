@@ -8,6 +8,10 @@
 !vite.config.ts
 !src/
 !src/**
+!docker/
+!docker/**
+!backend/
+!backend/**
 
 # Keep local configuration and generated content out of the build context.
 **/.env
@@ -15,3 +19,15 @@
 **/*.local
 **/node_modules
 **/graphify-out
+
+# Backend runtime secrets and local output must never enter an image.
+backend/config.yaml
+backend/auths
+backend/logs
+backend/static
+backend/.git
+backend/.github
+backend/docs
+backend/assets
+backend/examples
+backend/test
