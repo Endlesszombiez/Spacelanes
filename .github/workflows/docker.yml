@@ -70,7 +70,7 @@ jobs:
           docker run --detach --name spacelanes-smoke \
             --publish 127.0.0.1:8080:8080 spacelanes-proxy:smoke
           trap 'docker logs spacelanes-smoke; docker rm --force spacelanes-smoke' EXIT
-          curl --fail --silent --show-error --retry 10 --retry-delay 1 \
+          curl --fail --silent --show-error --retry 10 --retry-delay 1 --retry-all-errors \
             --retry-connrefused --output /tmp/spacelanes.html http://127.0.0.1:8080/
           grep -q '<title>Spacelanes Proxy</title>' /tmp/spacelanes.html
           grep -q '<div id="root">' /tmp/spacelanes.html
